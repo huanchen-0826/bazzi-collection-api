@@ -1,0 +1,14 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 虚拟环境 (Virtual environments)
+venv/
+env/
+
+# 环境变量敏感信息 (Environment variables)
+.env
+
+# 操作系统元数据 (Metadata)
+.DS_Store
+Thumbs.db
