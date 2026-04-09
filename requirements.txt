@@ -2,3 +2,4 @@ flask
 flask-cors
 lunar-python
 matplotlib
+requests

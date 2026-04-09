@@ -2,27 +2,43 @@
 # -*- coding: utf-8 -*-
 from lunar_python import Solar
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 import io
 import base64
+import os
+import requests
 
 # 设置 matplotlib 后端为 'Agg'，这样它不会尝试弹窗，而是静默画图
 plt.switch_backend('Agg')
 
 # 配置字体（保持之前的逻辑）
-def configure_fonts():
-    font_candidates = ['SimHei', 'Microsoft YaHei', 'PingFang SC', 'Heiti TC']
-    for font in font_candidates:
-        try:
-            plt.rcParams['font.sans-serif'] = [font]
-            plt.rcParams['axes.unicode_minus'] = False
-            return font
-        except:
-            continue
-
-configure_fonts()
 plt.style.use('bmh')
 
-def get_baazi_data(year, month, day, hour, minute):
+def configure_fonts():
+    font_path = '/tmp/NotoSansCJK.ttf'
+
+    # 如果字体还没下载过，就下载
+    if not os.path.exists(font_path):
+        print("正在下载中文字体...")
+        url = 'https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf'
+        try:
+            r = requests.get(url, timeout=30)
+            with open(font_path, 'wb') as f:
+                f.write(r.content)
+            print("字体下载完成")
+        except Exception as e:
+            print(f"字体下载失败: {e}")
+            return
+    
+    # 注册字体
+    from matplotlib import font_manager
+    font_manager.fontManager.addfont(font_path)
+    plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC']
+    plt.rcParams['axes.unicode_minus'] = False
+
+configure_fonts()
+
+def get_baazi_data(year, month, day, hour, minute, gender):
     """
     输入：出生时间
     输出：一个包含所有分析结果的字典 (Dictionary)
@@ -53,11 +69,45 @@ def get_baazi_data(year, month, day, hour, minute):
     for char in chars:
         ele = wuxing_map.get(char)
         if ele: stats[ele] += 1
+
+    # 3. 统计藏干
+    canggan_map = {
+        '子': ['癸'],
+        '丑': ['己', '癸', '辛'],
+        '寅': ['甲', '丙', '戊'],
+        '卯': ['乙'],
+        '辰': ['戊', '乙', '癸'],
+        '巳': ['丙', '戊', '庚'],
+        '午': ['丁', '己'],
+        '未': ['己', '丁', '乙'],
+        '申': ['庚', '壬', '戊'],
+        '酉': ['辛'],
+        '戌': ['戊', '辛', '丁'],
+        '亥': ['壬', '甲']
+    }
+    # TO-DO
+
+    # 4. 十神计算
+    shishen_map = {
+        ('甲','甲'):('比肩'),('甲','乙'):('劫财'),
+        ('甲','丙'):('食神'),('甲','丁'):('伤官'),
+        ('甲','戊'):('偏财'),('甲','己'):('正财'),
+        ('甲','庚'):('七杀'),('甲','辛'):('正官'),
+        ('甲','壬'):('偏印'),('甲','癸'):('正印'),
+        # TO-DO      
+    }
+ 
+    def get_shi_shen(day_master, gan):
+        return shishen_map.get((day_master, gan), '未知')
+    
+    # 5. 排大运
+    gender_int = 1 if gender == 'male' else 0
+    dayun = baazi.getYun(gender_int)
             
-    # 3. 生成图片并转为 Base64 字符串
+    # 6. 生成图片并转为 Base64 字符串
     img_base64 = generate_chart_base64(stats)
     
-    # 4. 简单的日主和财星逻辑
+    # 7. 简单的日主和财星逻辑
     day_master = chars[4]
     day_master_element = wuxing_map[day_master]
     
