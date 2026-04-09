@@ -15,26 +15,19 @@ plt.switch_backend('Agg')
 plt.style.use('bmh')
 
 def configure_fonts():
-    font_path = '/tmp/NotoSansCJK.ttf'
-
-    # 如果字体还没下载过，就下载
-    if not os.path.exists(font_path):
-        print("正在下载中文字体...")
-        url = 'https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf'
-        try:
-            r = requests.get(url, timeout=30)
-            with open(font_path, 'wb') as f:
-                f.write(r.content)
-            print("字体下载完成")
-        except Exception as e:
-            print(f"字体下载失败: {e}")
-            return
-    
-    # 注册字体
+    import os
     from matplotlib import font_manager
-    font_manager.fontManager.addfont(font_path)
-    plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC']
-    plt.rcParams['axes.unicode_minus'] = False
+    
+    # 字体文件和代码在同一目录
+    font_path = os.path.join(os.path.dirname(__file__), 'font.otf')
+    
+    if os.path.exists(font_path):
+        font_manager.fontManager.addfont(font_path)
+        plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC']
+        plt.rcParams['axes.unicode_minus'] = False
+        print(f"字体加载成功: {font_path}")
+    else:
+        print(f"字体文件不存在: {font_path}")
 
 configure_fonts()
 

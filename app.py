@@ -5,6 +5,7 @@ from baazi_core import get_baazi_data # 导入刚才那个核心文件
 import json
 import os
 import urllib.request
+import urllib.error
 
 app = Flask(__name__)
 CORS(app) # 开启跨域支持
@@ -17,6 +18,9 @@ def save_to_supabase(data):
     """Save data into Supabase"""
     url = f"{supabase_url}/rest/v1/readings"
 
+    print(f"Supabase URL: {supabase_url}")
+    print(f"Supabase KEY前10位: {supabase_key[:10] if supabase_key else 'None'}")
+
     payload = json.dumps(data).encode('utf-8')
 
     req = urllib.request.Request(url, data=payload, method='POST')
@@ -27,7 +31,12 @@ def save_to_supabase(data):
 
     try:
         urllib.request.urlopen(req)
+        print("Supabase保存成功")
         return True
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        print(f"Supabase HTTPError: {e.code}, {body}")
+        return False
     except Exception as e:
         print(f"Save failed: {e}")
         return False
