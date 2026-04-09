@@ -17,15 +17,19 @@ plt.style.use('bmh')
 def configure_fonts():
     import os
     from matplotlib import font_manager
-    
-    # 字体文件和代码在同一目录
-    font_path = os.path.join(os.path.dirname(__file__), 'font.otf')
-    
+
+    # 使用 abspath 确保在任何工作目录下都能找到字体文件
+    # 部署环境中 __file__ 可能是相对路径，dirname 会返回空字符串导致找不到字体
+    font_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'font.otf')
+
     if os.path.exists(font_path):
         font_manager.fontManager.addfont(font_path)
-        plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC']
+        # 读取字体文件中真实的字体名称，避免硬编码名称与实际不符
+        prop = font_manager.FontProperties(fname=font_path)
+        actual_font_name = prop.get_name()
+        plt.rcParams['font.sans-serif'] = [actual_font_name]
         plt.rcParams['axes.unicode_minus'] = False
-        print(f"字体加载成功: {font_path}")
+        print(f"字体加载成功: {font_path}，字体名: {actual_font_name}")
     else:
         print(f"字体文件不存在: {font_path}")
 

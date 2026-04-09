@@ -18,28 +18,53 @@ def save_to_supabase(data):
     """Save data into Supabase"""
     url = f"{supabase_url}/rest/v1/readings"
 
-    print(f"Supabase URL: {supabase_url}")
-    print(f"Supabase KEY前10位: {supabase_key[:10] if supabase_key else 'None'}")
+    print(f"[DB] 目标 URL: {url}")
+    print(f"[DB] Key 前10位: {supabase_key[:10] if supabase_key else 'None'}")
 
-    payload = json.dumps(data).encode('utf-8')
+    payload = json.dumps(data, ensure_ascii=False).encode('utf-8')
 
     req = urllib.request.Request(url, data=payload, method='POST')
-    req.add_header('Content-Type', 'application/json')
+    req.add_header('Content-Type', 'application/json; charset=utf-8')
     req.add_header('apikey', supabase_key)
     req.add_header('Authorization', f'Bearer {supabase_key}')
     req.add_header('Prefer', 'return=minimal')
 
     try:
-        urllib.request.urlopen(req)
-        print("Supabase保存成功")
+        import ssl
+        # 创建 SSL context，兼容某些云平台的证书环境
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
+            print(f"[DB] 保存成功，状态码: {resp.status}")
         return True
     except urllib.error.HTTPError as e:
-        body = e.read().decode()
-        print(f"Supabase HTTPError: {e.code}, {body}")
+        body = e.read().decode('utf-8', errors='replace')
+        print(f"[DB] HTTPError {e.code}: {body}")
+        return False
+    except urllib.error.URLError as e:
+        # 网络不通、DNS 解析失败、连接超时等都会走这里
+        print(f"[DB] URLError（网络问题）: {e.reason}")
         return False
     except Exception as e:
-        print(f"Save failed: {e}")
+        print(f"[DB] 未知错误: {type(e).__name__}: {e}")
         return False
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    """快速诊断接口：检查 Supabase 是否可达"""
+    import ssl
+    test_url = f"{supabase_url}/rest/v1/readings?limit=1"
+    req = urllib.request.Request(test_url)
+    req.add_header('apikey', supabase_key)
+    req.add_header('Authorization', f'Bearer {supabase_key}')
+    try:
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, context=ctx, timeout=5) as resp:
+            return jsonify({"status": "ok", "db": "connected", "http_status": resp.status})
+    except urllib.error.HTTPError as e:
+        return jsonify({"status": "ok", "db": f"http_error_{e.code}"}), 200
+    except Exception as e:
+        return jsonify({"status": "ok", "db": "unreachable", "error": str(e)}), 200
+
 
 # 定义一个接口，比如叫 /api/calculate
 @app.route('/api/calculate', methods=['POST'])
@@ -65,7 +90,7 @@ def calculate():
         result = get_baazi_data(year, month, day, hour, minute, gender)
 
         # 4. 存储到数据库
-        save_to_supabase({
+        db_saved = save_to_supabase({
             "customer_name": name,
             "birth_year": year,
             "birth_month": month,
@@ -75,10 +100,11 @@ def calculate():
             "gender": gender,
             "bazzi_result": json.dumps(result['bazi'], ensure_ascii=False)
         })
-        
-        # 5. 返回结果给前端
+
+        # 5. 返回结果给前端（db_saved 字段可帮助调试数据库是否写入成功）
         return jsonify({
             "status": "success",
+            "db_saved": db_saved,
             "data": result
         })
         
