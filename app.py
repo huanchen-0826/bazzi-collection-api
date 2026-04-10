@@ -10,9 +10,12 @@ import urllib.error
 app = Flask(__name__)
 CORS(app) # 开启跨域支持
 
-# SUPABASE configuration
-supabase_url = os.environ.get('supabase_url', 'https://zxzbkpmholwhbxmmlufy.supabase.co')
-supabase_key = os.environ.get('supabase_key', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4emJrcG1ob2x3aGJ4bW1sdWZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3Mzc2MTgsImV4cCI6MjA5MTMxMzYxOH0.yXfWqBK0S3T2efyFtbW-bMFDuy4hOigMabTZHfEz3b0')
+# SUPABASE configuration（从环境变量读取，不在代码里硬编码密钥）
+supabase_url = os.environ.get('SUPABASE_URL')
+supabase_key = os.environ.get('SUPABASE_KEY')
+
+if not supabase_url or not supabase_key:
+    print("[WARN] Supabase 环境变量未设置！请在 Render 的 Environment 里添加 SUPABASE_URL 和 SUPABASE_KEY", flush=True)
 
 def save_to_supabase(data):
     """Save data into Supabase"""
