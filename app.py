@@ -18,8 +18,8 @@ def save_to_supabase(data):
     """Save data into Supabase"""
     url = f"{supabase_url}/rest/v1/readings"
 
-    print(f"[DB] 目标 URL: {url}")
-    print(f"[DB] Key 前10位: {supabase_key[:10] if supabase_key else 'None'}")
+    print(f"[DB] 目标 URL: {url}", flush=True)
+    print(f"[DB] Key 前10位: {supabase_key[:10] if supabase_key else 'None'}", flush=True)
 
     payload = json.dumps(data, ensure_ascii=False).encode('utf-8')
 
@@ -34,18 +34,17 @@ def save_to_supabase(data):
         # 创建 SSL context，兼容某些云平台的证书环境
         ctx = ssl.create_default_context()
         with urllib.request.urlopen(req, context=ctx, timeout=10) as resp:
-            print(f"[DB] 保存成功，状态码: {resp.status}")
+            print(f"[DB] 保存成功，状态码: {resp.status}", flush=True)
         return True
     except urllib.error.HTTPError as e:
         body = e.read().decode('utf-8', errors='replace')
-        print(f"[DB] HTTPError {e.code}: {body}")
+        print(f"[DB] HTTPError {e.code}: {body}", flush=True)
         return False
     except urllib.error.URLError as e:
-        # 网络不通、DNS 解析失败、连接超时等都会走这里
-        print(f"[DB] URLError（网络问题）: {e.reason}")
+        print(f"[DB] URLError（网络问题）: {e.reason}", flush=True)
         return False
     except Exception as e:
-        print(f"[DB] 未知错误: {type(e).__name__}: {e}")
+        print(f"[DB] 未知错误: {type(e).__name__}: {e}", flush=True)
         return False
 
 @app.route('/api/health', methods=['GET'])
